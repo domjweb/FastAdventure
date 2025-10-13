@@ -6,9 +6,9 @@ from datetime import datetime
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../backend')))
-from db.database import SessionLocal
-from models.job import StoryJob
-from core.story_generator import StoryGenerator
+from backend.db.database import SessionLocal
+from backend.models.job import StoryJob
+from backend.core.story_generator import StoryGenerator
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Azure Function: stories_create called')
