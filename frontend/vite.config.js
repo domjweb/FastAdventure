@@ -7,6 +7,7 @@ export default defineConfig(({ command, mode }) => {
   console.log(env.VITE_DEBUG)
 
   return {
+    base: '/',
     plugins: [react()],
     server: {
       proxy: {
