@@ -38,6 +38,6 @@ FastAdventure is a full-stack application that leverages AI to generate interact
 2. The app submits the theme to the backend, which starts an async job.
 3. The frontend polls for job status, showing a loading indicator.
 4. When the story is ready, the user is redirected to an interactive story view.
-5. The user reads the scenario and makes choices, navigating the AI-generated story tree.
+5. The user reads the scenario and makes choices, navigating the AI-generated story tree as they progress through the story.
 
 
