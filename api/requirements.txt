@@ -3,3 +3,11 @@
 # azure-monitor-opentelemetry 
 
 azure-functions
+fastapi[all]>=0.119.0
+langchain>=0.3.27
+langchain-openai>=0.3.35
+psycopg2-binary>=2.9.11
+python-dotenv>=1.1.1
+sqlalchemy>=2.0.44
+uvicorn>=0.37.0
+pydantic-settings
