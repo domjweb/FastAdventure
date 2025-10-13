@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
-from db.database import Base
+from backend.db.database import Base
 
 class StoryJob(Base):
     __tablename__ = "story_jobs"
