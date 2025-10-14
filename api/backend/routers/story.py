@@ -50,7 +50,15 @@ def create_story(
         session_id=session_id
     )
 
-    return job_doc
+    # Map Cosmos DB job_doc to StoryJobResponse for consistent API response
+    return StoryJobResponse(
+        job_id=job_doc["id"],
+        status=job_doc["status"],
+        created_at=job_doc["created_at"],
+        story_id=job_doc.get("story_id"),
+        completed_at=job_doc.get("completed_at"),
+        error=job_doc.get("error")
+    )
 
 def generate_story_task(job_id: str, theme: str, session_id: str):
     import logging
