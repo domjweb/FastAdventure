@@ -74,5 +74,26 @@ def generate_story_task(job_id: str, theme: str, session_id: str):
         print(f"[generate_story_task] Exception occurred: {e}")
         logging.error(f"[generate_story_task] Exception occurred: {e}")
 
-# Cosmos DB: Implement story retrieval logic as needed
+
+# Cosmos DB: Retrieve story document by id and partition key
+@router.get("/{story_id}/complete", response_model=CompleteStoryResponse)
+def get_complete_story(story_id: str):
+    container = get_stories_container()
+    partition_key = "anonymous"  # Replace with actual user_id if needed
+    import logging
+    try:
+        story = container.read_item(item=story_id, partition_key=partition_key)
+    except Exception as e:
+        logging.error(f"Story not found: id={story_id}, partition_key={partition_key}. Exception: {e}")
+        raise HTTPException(status_code=404, detail="Story not found")
+
+    # Map Cosmos DB document to CompleteStoryResponse
+    return CompleteStoryResponse(
+        id=story["id"],
+        title=story["title"],
+        session_id=story.get("session_id"),
+        created_at=story.get("created_at"),
+        root_node=story.get("rootNode"),
+        all_nodes={}  # Optionally populate if you store all nodes separately
+    )
 
