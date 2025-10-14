@@ -20,4 +20,13 @@ def get_job_status(job_id: str):
     except Exception as e:
         logging.error(f"Job not found: id={job_id}, partition_key={partition_key}. Exception: {e}")
         raise HTTPException(status_code=404, detail="Job not found")
-    return job
+
+    # Map Cosmos DB document to StoryJobResponse
+    return StoryJobResponse(
+        job_id=job["id"],
+        status=job["status"],
+        created_at=job["created_at"],
+        story_id=job.get("story_id"),
+        completed_at=job.get("completed_at"),
+        error=job.get("error")
+    )
