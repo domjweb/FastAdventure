@@ -5,8 +5,10 @@ from pydantic import field_validator
 class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     DEBUG: bool = False
-    # Example: postgresql+psycopg2://username:password@host:5432/dbname
-    DATABASE_URL: str = "postgresql+psycopg2://user:password@localhost:5432/fastadventure"
+    COSMOS_ENDPOINT: str = ""
+    COSMOS_KEY: str = ""
+    COSMOS_DATABASE: str = "storiesdb"
+    COSMOS_CONTAINER: str = "stories"
     ALLOWED_ORIGINS: str = ""
     OPENAI_API_KEY: str
 

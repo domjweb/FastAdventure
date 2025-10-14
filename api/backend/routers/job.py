@@ -1,9 +1,7 @@
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Cookie
-from sqlalchemy.orm import Session
-from backend.db.database import get_db
-from backend.models.job import StoryJob
+from backend.db.database import get_stories_container
 from backend.schemas.job import StoryJobResponse
 
 router = APIRouter (
@@ -12,10 +10,10 @@ router = APIRouter (
 )
 
 @router.get("/{job_id}", response_model=StoryJobResponse)
-def get_job_status(job_id:str, db: Session = Depends(get_db)):
-    job = db.query(StoryJob).filter(StoryJob.job_id == job_id).first()
-    
-    if not job:
+def get_job_status(job_id: str):
+    container = get_stories_container()
+    try:
+        job = container.read_item(item=job_id, partition_key="anonymous")  # Replace with actual user_id if available
+    except Exception:
         raise HTTPException(status_code=404, detail="Job not found")
-    
     return job
