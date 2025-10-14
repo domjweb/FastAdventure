@@ -6,6 +6,7 @@ import StoryGenerator from "./components/StoryGenerator.jsx";
 
 
 function App() {
+  console.log('[App] Rendered');
   const [count, setCount] = useState(0)
 
   return (
