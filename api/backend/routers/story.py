@@ -38,7 +38,10 @@ def create_story(
         "created_at": datetime.now().isoformat(),
         "user_id": "anonymous"  # Replace with actual user/account id if available
     }
+    import logging
+    logging.info(f"[Job Creation] Creating job: {job_doc}")
     container.create_item(body=job_doc)
+    logging.info(f"[Job Creation] Job created in Cosmos DB: id={job_id}, partition_key=anonymous")
 
     background_tasks.add_task(
         generate_story_task,
