@@ -1,6 +1,8 @@
 import azure.functions as func
-import datetime
-import json
-import logging
+from mangum import Mangum
+from main import app  # Import your FastAPI app
 
-app = func.FunctionApp()
+handler = Mangum(app)
+
+def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
+	return func.AsgiMiddleware(handler).handle(req, context)
