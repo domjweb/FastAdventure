@@ -51,15 +51,16 @@ function StoryGenerator() {
         try {
             const response = await axios.get(`${API_BASE_URL}/jobs/${id}`)
             const {status, story_id, error: jobError} = response.data
+            console.log('[pollJobStatus] status:', status, 'story_id:', story_id);
             setJobStatus(status)
 
-                if (status === "completed" && story_id) {
-                    fetchStory(story_id)
-                }
-                else if (status === "failed" || jobError) {
-                    setError(jobError || "Failed to generate story")
-                    setLoading(false)
-                }
+            if (status === "completed" && story_id) {
+                fetchStory(story_id)
+            }
+            else if (status === "failed" || jobError) {
+                setError(jobError || "Failed to generate story")
+                setLoading(false)
+            }
         }
         catch (e) {
             if (e.response?.status !== 404) {
