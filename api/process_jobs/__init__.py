@@ -3,6 +3,7 @@ import logging
 from db.database import get_stories_container
 from core.story_generator import StoryGenerator
 from datetime import datetime
+import uuid
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("[HTTP Trigger] Processing pending jobs...")
@@ -12,10 +13,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     for job in container.query_items(query=query, enable_cross_partition_query=True):
         try:
             logging.info(f"[HTTP Trigger] Processing job: {job['id']}")
-            story_doc = StoryGenerator.generate_story(container, job['session_id'], job.get('theme', 'fantasy'))
+            story_id = str(uuid.uuid4())
+            job['story_id'] = story_id
+            story_doc = StoryGenerator.generate_story(
+                container,
+                job['session_id'],
+                job.get('theme', 'fantasy'),
+                story_id=story_id,
+                user_id=job.get('user_id', 'anonymous')
+            )
             job['status'] = 'completed'
             job['completed_at'] = datetime.now().isoformat()
-            job['story_id'] = story_doc['id']
             container.upsert_item(job)
             container.upsert_item(story_doc)
             processed += 1

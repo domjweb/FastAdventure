@@ -16,7 +16,7 @@ class StoryGenerator:
         return ChatOpenAI(model="gpt-4-turbo")
     
     @classmethod
-    def generate_story(cls, db, session_id: str, theme: str = "fantasy") -> dict:
+    def generate_story(cls, db, session_id: str, theme: str = "fantasy", story_id: str = None, user_id: str = None) -> dict:
         llm = cls._get_llm()
         story_parser = PydanticOutputParser(pydantic_object=StoryLLMResponse)
 
@@ -31,8 +31,6 @@ class StoryGenerator:
             )
         ]).partial(format_instructions=story_parser.get_format_instructions())
 
-        # The correct way to invoke the LLM and prompt may depend on your langchain version
-        # Here is a typical pattern:
         raw_response = llm.invoke(prompt.invoke({}))
 
         response_text = raw_response
@@ -42,12 +40,13 @@ class StoryGenerator:
         story_structure = story_parser.parse(response_text)
         # Cosmos DB: Build story document as dict
         story_doc = {
-            "id": str(uuid.uuid4()),
+            "id": story_id or str(uuid.uuid4()),
             "title": story_structure.title,
             "session_id": session_id,
             "created_at": datetime.now().isoformat(),
             "rootNode": story_structure.rootNode.model_dump() if hasattr(story_structure.rootNode, 'model_dump') else story_structure.rootNode,
         }
-        # Optionally, save to Cosmos DB here if needed
+        if user_id:
+            story_doc["user_id"] = user_id
         return story_doc
 
