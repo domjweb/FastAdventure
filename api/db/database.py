@@ -1,23 +1,15 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+
+from azure.cosmos import CosmosClient
 from core.config import settings
 
-engine = create_engine(
-    settings.DATABASE_URL
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+def get_cosmos_client():
+    return CosmosClient(settings.COSMOS_ENDPOINT, credential=settings.COSMOS_KEY)
 
-def get_db():
-    db = SessionLocal()
-    try: 
-        yield db
-    finally:
-        db.close()
+def get_stories_container():
+    client = get_cosmos_client()
+    database = client.get_database_client(settings.COSMOS_DATABASE)
+    container = database.get_container_client(settings.COSMOS_CONTAINER)
+    return container
 
-def create_tables():
-    Base.metadata.create_all(bind=engine)
-    
 
 

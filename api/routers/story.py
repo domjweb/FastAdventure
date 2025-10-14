@@ -1,11 +1,9 @@
+
 import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Response, BackgroundTasks
-from sqlalchemy.orm import Session
-from db.database import get_db, SessionLocal
-from models.story import Story, StoryNode
-from models.job import StoryJob
+from db.database import get_stories_container
 from schemas.story import (
     CompleteStoryResponse, CompleteStoryNodeResponse, CreateStoryRequest
 )
@@ -28,21 +26,23 @@ def create_story(
     request: CreateStoryRequest,
     background_tasks: BackgroundTasks,
     response: Response,
-    session_id: str = Depends(get_session_id),
-    db: Session = Depends(get_db)
-
+    session_id: str = Depends(get_session_id)
 ):
     response.set_cookie(key="session_id", value=session_id)
     job_id = str(uuid.uuid4())
-    job = StoryJob(
-        job_id=job_id,
-        session_id=session_id,
-        theme=request.theme,
-        status="pending"
-    )
-    db.add(job)
-    db.commit()
-
+    container = get_stories_container()
+    job_doc = {
+        "id": job_id,
+        "session_id": session_id,
+        "theme": request.theme,
+        "status": "pending",
+        "created_at": datetime.now().isoformat(),
+        "user_id": "anonymous"  # Replace with actual user/account id if available
+    }
+    import logging
+    logging.info(f"[Job Creation] Creating job: {job_doc}")
+    container.create_item(body=job_doc)
+    logging.info(f"[Job Creation] Job created in Cosmos DB: id={job_id}, partition_key=anonymous")
 
     background_tasks.add_task(
         generate_story_task,
@@ -51,85 +51,61 @@ def create_story(
         session_id=session_id
     )
 
-    return job
+    # Map Cosmos DB job_doc to StoryJobResponse for consistent API response
+    return StoryJobResponse(
+        job_id=job_doc["id"],
+        status=job_doc["status"],
+        created_at=job_doc["created_at"],
+        story_id=job_doc.get("story_id"),
+        completed_at=job_doc.get("completed_at"),
+        error=job_doc.get("error")
+    )
 
 def generate_story_task(job_id: str, theme: str, session_id: str):
     import logging
     logging.basicConfig(level=logging.INFO)
-    db = SessionLocal()
-    print(f"[generate_story_task] Started for job_id={job_id}, theme={theme}, session_id={session_id}")
-    logging.info(f"[generate_story_task] Started for job_id={job_id}, theme={theme}, session_id={session_id}")
+    container = get_stories_container()
     try:
-        job = db.query(StoryJob).filter(StoryJob.job_id == job_id).first()
-        print(f"[generate_story_task] Queried job: {job}")
-        logging.info(f"[generate_story_task] Queried job: {job}")
+        job = container.read_item(item=job_id, partition_key="anonymous")  # Replace with actual user_id if available
+        job["status"] = "processing"
+        container.upsert_item(body=job)
 
-        if not job:
-            print(f"[generate_story_task] No job found for job_id={job_id}")
-            logging.warning(f"[generate_story_task] No job found for job_id={job_id}")
-            return
-        try:
-            job.status = "processing"
-            db.commit()
-            print(f"[generate_story_task] Set job status to processing and committed.")
-            logging.info(f"[generate_story_task] Set job status to processing and committed.")
+        story = StoryGenerator.generate_story(None, session_id, theme)
+        job["story_id"] = story.get("id")
+        job["status"] = "completed"
+        job["completed_at"] = datetime.now().isoformat()
+        container.upsert_item(body=job)
+        print(f"[generate_story_task] Job completed. story_id={job.get('story_id')}")
+        logging.info(f"[generate_story_task] Job completed. story_id={job.get('story_id')}")
+    except Exception as e:
+        job = container.read_item(item=job_id, partition_key="anonymous")
+        job["status"] = "failed"
+        job["completed_at"] = datetime.now().isoformat()
+        job["error"] = str(e)
+        container.upsert_item(body=job)
+        print(f"[generate_story_task] Exception occurred: {e}")
+        logging.error(f"[generate_story_task] Exception occurred: {e}")
 
-            story = StoryGenerator.generate_story(db, session_id, theme)
-            print(f"[generate_story_task] Story generated: {story}")
-            logging.info(f"[generate_story_task] Story generated: {story}")
 
-            job.story_id = story.id
-            job.status = "completed"
-            job.completed_at = datetime.now()
-            db.commit()
-            print(f"[generate_story_task] Job completed. story_id={story.id}")
-            logging.info(f"[generate_story_task] Job completed. story_id={story.id}")
-        except Exception as e:
-            job.status = "failed"
-            job.completed_at = datetime.now()
-            job.error = str(e)
-            db.commit()
-            print(f"[generate_story_task] Exception occurred: {e}")
-            logging.error(f"[generate_story_task] Exception occurred: {e}")
-    finally:
-        db.close()
-        print(f"[generate_story_task] DB session closed.")
-        logging.info(f"[generate_story_task] DB session closed.")
-
+# Cosmos DB: Retrieve story document by id and partition key
 @router.get("/{story_id}/complete", response_model=CompleteStoryResponse)
-def get_complete_story(story_id: int, db: Session = Depends(get_db)):
-    story = db.query(Story).filter(Story.id == story_id).first()
-    if not story: 
+def get_complete_story(story_id: str):
+    container = get_stories_container()
+    partition_key = "anonymous"  # Replace with actual user_id if needed
+    import logging
+    try:
+        story = container.read_item(item=story_id, partition_key=partition_key)
+    except Exception as e:
+        logging.error(f"Story not found: id={story_id}, partition_key={partition_key}. Exception: {e}")
         raise HTTPException(status_code=404, detail="Story not found")
-    
-    complete_story = build_complete_story_tree(db, story)
-    return complete_story
 
-
-def build_complete_story_tree(db: Session, story: Story) -> CompleteStoryResponse:
-    nodes = db.query(StoryNode).filter(StoryNode.story_id == story.id).all()
-
-    node_dict = {}
-    for node in nodes:
-        node_response = CompleteStoryNodeResponse(
-            id=node.id,
-            content=node.content,
-            is_ending=node.is_ending,
-            is_winning_ending=node.is_winning_ending,
-            options=node.options
-        )
-        node_dict[node.id] = node_response
-    
-    root_node = next((node for node in nodes if node.is_root), None)
-    if not root_node:
-        raise HTTPException(status_code=500, detail="Story root node not found")
-
+    # Map Cosmos DB document to CompleteStoryResponse
     return CompleteStoryResponse(
-        id=story.id,
-        title=story.title,
-        session_id=story.session_id,
-        created_at=story.created_at,
-        root_node=node_dict[root_node.id],
-        all_nodes=node_dict
+        id=story["id"],
+        title=story["title"],
+        session_id=story.get("session_id"),
+        created_at=story.get("created_at"),
+        root_node=story.get("rootNode"),
+        all_nodes={}  # Optionally populate if you store all nodes separately
     )
 

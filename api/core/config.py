@@ -5,7 +5,10 @@ from pydantic import field_validator
 class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     DEBUG: bool = False
-    DATABASE_URL: str = "your_database_url"
+    COSMOS_ENDPOINT: str = ""
+    COSMOS_KEY: str = ""
+    COSMOS_DATABASE: str = "storiesdb"
+    COSMOS_CONTAINER: str = "stories"
     ALLOWED_ORIGINS: str = ""
     OPENAI_API_KEY: str
 

@@ -1,9 +1,8 @@
+import logging
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Cookie
-from sqlalchemy.orm import Session
-from db.database import get_db
-from models.job import StoryJob
+from db.database import get_stories_container
 from schemas.job import StoryJobResponse
 
 router = APIRouter (
@@ -12,10 +11,23 @@ router = APIRouter (
 )
 
 @router.get("/{job_id}", response_model=StoryJobResponse)
-def get_job_status(job_id:str, db: Session = Depends(get_db)):
-    job = db.query(StoryJob).filter(StoryJob.job_id == job_id).first()
-    
-    if not job:
+def get_job_status(job_id: str):
+    container = get_stories_container()
+    partition_key = "anonymous"
+    logging.info(f"[Job Lookup] Attempting to read job: id={job_id}, partition_key={partition_key}")
+    try:
+        job = container.read_item(item=job_id, partition_key=partition_key)
+        logging.info(f"[Job Lookup] Found job: {job}")
+    except Exception as e:
+        logging.error(f"[Job Lookup] Job not found: id={job_id}, partition_key={partition_key}. Exception: {e}")
         raise HTTPException(status_code=404, detail="Job not found")
-    
-    return job
+
+    # Map Cosmos DB document to StoryJobResponse
+    return StoryJobResponse(
+        job_id=job["id"],
+        status=job["status"],
+        created_at=job["created_at"],
+        story_id=job.get("story_id"),
+        completed_at=job.get("completed_at"),
+        error=job.get("error")
+    )
