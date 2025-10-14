@@ -8,6 +8,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         container = get_stories_container()
         try:
             story = container.read_item(item=story_id, partition_key="anonymous")
+            # Convert rootNode to root_node for frontend compatibility
+            if "rootNode" in story:
+                story["root_node"] = story.pop("rootNode")
             return func.HttpResponse(
                 json.dumps(story, default=str),
                 mimetype="application/json"
