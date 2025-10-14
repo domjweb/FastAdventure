@@ -70,6 +70,7 @@ function StoryGenerator() {
     }
 
     const fetchStory = async (id) => {
+        console.log('[fetchStory] Navigating to /story/' + id);
         try {
             setLoading(false)
             setJobStatus("completed")
