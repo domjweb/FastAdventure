@@ -5,7 +5,8 @@ from pydantic import field_validator
 class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     DEBUG: bool = False
-    DATABASE_URL: str = "your_database_url"
+    # Example: postgresql+psycopg2://username:password@host:5432/dbname
+    DATABASE_URL: str = "postgresql+psycopg2://user:password@localhost:5432/fastadventure"
     ALLOWED_ORIGINS: str = ""
     OPENAI_API_KEY: str
 
