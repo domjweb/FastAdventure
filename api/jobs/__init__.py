@@ -18,8 +18,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             status_code=404,
             mimetype="application/json"
         )
-    # Map Cosmos DB document to response
+    # Map Cosmos DB document to response, ensuring valid JSON
+    import json
+    response = {
+        "job_id": job["id"],
+        "status": job.get("status"),
+        "created_at": job.get("created_at"),
+        "story_id": job.get("story_id"),
+        "completed_at": job.get("completed_at"),
+        "error": job.get("error")
+    }
     return func.HttpResponse(
-        f'{{"job_id": "{job["id"]}", "status": "{job["status"]}", "created_at": "{job["created_at"]}", "story_id": {repr(job.get("story_id"))}, "completed_at": {repr(job.get("completed_at"))}, "error": {repr(job.get("error"))}}}',
+        json.dumps(response),
         mimetype="application/json"
     )
