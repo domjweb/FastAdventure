@@ -6,8 +6,8 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": ["post"],
-      "route": "stories/create"
+      "methods": ["get"],
+      "route": "stories/{story_id}/complete"
     },
     {
       "type": "http",
