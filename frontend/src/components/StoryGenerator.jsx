@@ -6,6 +6,7 @@ import LoadingStatus from "./LoadingStatus.jsx";
 import {API_BASE_URL} from "../util.js"
 
 function StoryGenerator() {
+    console.log('[StoryGenerator] Rendered');
     const navigate = useNavigate()
     const [theme, setTheme] = useState("")
     const [jobId, setJobId] = useState(null)
