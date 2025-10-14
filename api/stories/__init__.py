@@ -8,7 +8,28 @@ from core.story_generator import StoryGenerator
 import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    if req.method == "POST":
+    method = req.method
+    path = req.route_params.get('story_id')
+    container = get_stories_container()
+
+    # GET /api/stories/{story_id}/complete
+    if method == "GET" and path:
+        story_id = path
+        try:
+            story = container.read_item(item=story_id, partition_key="anonymous")
+            return func.HttpResponse(
+                json.dumps(story, default=str),
+                mimetype="application/json"
+            )
+        except Exception:
+            return func.HttpResponse(
+                '{"detail": "Story not found"}',
+                status_code=404,
+                mimetype="application/json"
+            )
+
+    # POST /api/stories/create
+    if method == "POST":
         try:
             data = req.get_json()
             theme = data.get("theme", "fantasy")
@@ -20,7 +41,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             )
         session_id = str(uuid.uuid4())
         job_id = str(uuid.uuid4())
-        container = get_stories_container()
         job_doc = {
             "id": job_id,
             "session_id": session_id,
@@ -30,7 +50,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             "user_id": "anonymous"
         }
         container.create_item(body=job_doc)
-        # Optionally, trigger background story generation here
         return func.HttpResponse(
             json.dumps({
                 "job_id": job_doc["id"],
@@ -42,6 +61,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             }),
             mimetype="application/json"
         )
+
     return func.HttpResponse(
         '{"detail": "Method not allowed"}',
         status_code=405,

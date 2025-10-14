@@ -10,6 +10,14 @@
       "route": "stories/create"
     },
     {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": ["get"],
+      "route": "stories/{story_id}/complete"
+    },
+    {
       "type": "http",
       "direction": "out",
       "name": "$return"
