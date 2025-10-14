@@ -17,6 +17,7 @@ class StoryGenerator:
     
     @classmethod
     def generate_story(cls, db, session_id: str, theme: str = "fantasy", story_id: str = None, user_id: str = None) -> dict:
+        import copy
         llm = cls._get_llm()
         story_parser = PydanticOutputParser(pydantic_object=StoryLLMResponse)
 
@@ -38,13 +39,42 @@ class StoryGenerator:
             response_text = raw_response.content
 
         story_structure = story_parser.parse(response_text)
+
+        # --- Flatten the story tree into all_nodes and assign unique IDs ---
+        def flatten_nodes(node, all_nodes, parent_id=None):
+            node_id = str(uuid.uuid4())
+            node_dict = node.model_dump() if hasattr(node, 'model_dump') else copy.deepcopy(node)
+            node_dict['id'] = node_id
+            # Rename keys for frontend compatibility
+            node_dict['is_ending'] = node_dict.pop('isEnding', False)
+            node_dict['is_winning_ending'] = node_dict.pop('isWinningEnding', False)
+            # Process options recursively
+            options = node_dict.get('options')
+            if options:
+                new_options = []
+                for opt in options:
+                    opt_dict = opt.model_dump() if hasattr(opt, 'model_dump') else copy.deepcopy(opt)
+                    next_node = opt_dict.get('nextNode')
+                    if next_node:
+                        next_node_id = flatten_nodes(next_node, all_nodes, parent_id=node_id)
+                        opt_dict['node_id'] = next_node_id
+                        del opt_dict['nextNode']
+                    new_options.append(opt_dict)
+                node_dict['options'] = new_options
+            all_nodes[node_id] = node_dict
+            return node_id
+
+        all_nodes = {}
+        root_node_id = flatten_nodes(story_structure.rootNode, all_nodes)
+
         # Cosmos DB: Build story document as dict
         story_doc = {
             "id": story_id or str(uuid.uuid4()),
             "title": story_structure.title,
             "session_id": session_id,
             "created_at": datetime.now().isoformat(),
-            "rootNode": story_structure.rootNode.model_dump() if hasattr(story_structure.rootNode, 'model_dump') else story_structure.rootNode,
+            "root_node": all_nodes[root_node_id],
+            "all_nodes": all_nodes,
         }
         if user_id:
             story_doc["user_id"] = user_id
