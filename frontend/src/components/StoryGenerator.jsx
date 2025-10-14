@@ -15,6 +15,7 @@ function StoryGenerator() {
 
     useEffect(() => {
         let pollInterval;
+        console.log('[useEffect] jobId:', jobId, 'jobStatus:', jobStatus);
         if (jobId && jobStatus === "processing") {
             pollInterval = setInterval(() => {
                 pollJobStatus(jobId)
