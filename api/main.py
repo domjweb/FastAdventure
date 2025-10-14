@@ -1,7 +1,4 @@
 
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
