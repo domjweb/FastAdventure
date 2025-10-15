@@ -18,6 +18,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             status_code=404,
             mimetype="application/json"
         )
+    # Log the raw job document for debugging
+    logging.info(f"[Job Lookup] Raw job document: {job}")
     # Map Cosmos DB document to response, ensuring valid JSON
     import json
     response = {
@@ -28,6 +30,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         "completed_at": job.get("completed_at"),
         "error": job.get("error")
     }
+    logging.info(f"[Job Lookup] Returning response: {response}")
     return func.HttpResponse(
         json.dumps(response),
         mimetype="application/json"

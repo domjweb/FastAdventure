@@ -24,13 +24,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             )
             job['status'] = 'completed'
             job['completed_at'] = datetime.now().isoformat()
-            container.upsert_item(job)
-            container.upsert_item(story_doc)
+            container.upsert_item(job, partition_key="anonymous")
+            container.upsert_item(story_doc, partition_key="anonymous")
             processed += 1
         except Exception as e:
             logging.error(f"[HTTP Trigger] Failed to process job {job['id']}: {e}")
             job['status'] = 'error'
             job['error'] = str(e)
             job['completed_at'] = datetime.now().isoformat()
-            container.upsert_item(job)
+            container.upsert_item(job, partition_key="anonymous")
     return func.HttpResponse(f"Processed {processed} jobs.", status_code=200)
