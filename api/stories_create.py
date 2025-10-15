@@ -36,7 +36,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         "created_at": datetime.now().isoformat(),
         "user_id": "anonymous"  # Replace with actual user/account id if available
     }
-    container.create_item(body=job_doc, partition_key="anonymous")
+    container.create_item(job_doc, "anonymous")
 
     try:
         # Generate story and update job document
@@ -44,7 +44,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         job_doc["story_id"] = story.get("id")
         job_doc["status"] = "completed"
         job_doc["completed_at"] = datetime.now().isoformat()
-        container.upsert_item(body=job_doc, partition_key="anonymous")
+        container.upsert_item(job_doc, "anonymous")
         result = {
             "job_id": job_doc["id"],
             "session_id": job_doc["session_id"],
@@ -62,7 +62,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         job_doc["status"] = "failed"
         job_doc["completed_at"] = datetime.now().isoformat()
         job_doc["error"] = str(e)
-        container.upsert_item(body=job_doc, partition_key="anonymous")
+        container.upsert_item(job_doc, "anonymous")
         return func.HttpResponse(
             json.dumps({"error": str(e)}),
             status_code=500,
