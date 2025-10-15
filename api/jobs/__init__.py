@@ -7,6 +7,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     job_id = req.route_params.get('job_id')
     container = get_stories_container()
     partition_key = "anonymous"
+    logging.info(f"[Job Lookup] Using partition_key: {partition_key}")
     logging.info(f"[Job Lookup] Attempting to read job: id={job_id}, partition_key={partition_key}")
     try:
         job = container.read_item(item=job_id, partition_key=partition_key)
@@ -18,6 +19,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             status_code=404,
             mimetype="application/json"
         )
+    # Log the partition key and job document for debugging
+    logging.info(f"[Job Lookup] Partition key used: {partition_key}")
+    logging.info(f"[Job Lookup] Raw job document: {job}")
     # Log the raw job document for debugging
     logging.info(f"[Job Lookup] Raw job document: {job}")
     # Map Cosmos DB document to response, ensuring valid JSON
